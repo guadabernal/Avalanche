@@ -47,7 +47,7 @@ void loop() {
   if (n >= 4) {
     int16_t v[2] = {0}; //-128..127 
     Serial1.readBytes((char*)v, 4);
-    
+
     if (v[0] == 1024){
       modeGamepad =! modeGamepad;
       return;    
