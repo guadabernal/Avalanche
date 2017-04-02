@@ -58,17 +58,18 @@ void loop() {
       t0 = t1;
       motoroff=false;
     }         
+
   }
-  if (!modeGamepad){
-    int n = Serial.available();
-    if (n >= 4) {
-      int16_t v[2] = {0}; //-128..127 
-      Serial.readBytes((char*)v, 4);
+  n = Serial.available();
+  if (n >= 4) {
+    int16_t v[2] = {0}; //-128..127 
+    Serial.readBytes((char*)v, 4);
+    if (!modeGamepad) {
       setThrottle(v[0], v[1]);
       t1 = millis();
       t0 = t1;   
-      motoroff=false;      
-    }
+      motoroff=false;    
+    }  
   }
 
   if (t1 - t0 > 100 && !motoroff) {
@@ -80,7 +81,7 @@ void loop() {
     setThrottle(0, 0);  
     motoroff = true;    
   }  
-  delay(5);
+  delay(10);
 }
 
 
