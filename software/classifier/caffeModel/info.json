@@ -1,0 +1,26 @@
+{
+    "caffe flavor": "BVLC",
+    "caffe version": "1.0.0-rc5",
+    "creation time": "2017-04-18 20:10:14.058597",
+    "dataset_id": "20170418-200932-8e82",
+    "deploy file": "deploy.prototxt",
+    "digits version": "5.1-dev",
+    "framework": "caffe",
+    "id": "20170418-201014-e3d4",
+    "image dimensions": [
+        32,
+        32,
+        1
+    ],
+    "image resize mode": "squash",
+    "job id": "20170418-201014-e3d4",
+    "labels file": "labels.txt",
+    "mean file": "mean.binaryproto",
+    "model file": "original.prototxt",
+    "name": "lenet32",
+    "snapshot file": "snapshot_iter_330.caffemodel",
+    "solver file": "solver.prototxt",
+    "status": "Done",
+    "train_val file": "train_val.prototxt",
+    "username": "ariel"
+}

@@ -1,0 +1,232 @@
+#include <unistd.h>
+#include "comm_utils.h"
+#include "opencv2/opencv.hpp"
+#include <fstream>
+#include <iostream>
+#include <opencv2/opencv.hpp>
+#include <stdio.h>
+#include <dirent.h>
+
+using namespace std;
+using namespace cv;
+
+int GetDirectoryFiles(const std::string& dir, std::vector<std::string> &files)
+{
+    DIR *dp;
+    struct dirent *dirp;
+    if((dp  = opendir(dir.c_str())) == NULL) {
+        cout << "Error(" << errno << ") opening " << dir << endl;
+        return errno;
+    }
+    while ((dirp = readdir(dp)) != NULL) {
+      std::string name = dirp->d_name;
+      if(name != "." && name != "..")
+        files.push_back(dir+"/"+name);
+    }
+    closedir(dp);
+    return 0;
+}
+
+
+void sortTrainClasses() {
+  using namespace cv;
+  std::vector<std::string> files;
+  std::string path = "output/train";
+  GetDirectoryFiles(path, files);
+  std::ofstream ofs;
+  ofs.open("/home/guada/dev/classaval/train/train.txt");
+  if (!ofs.is_open()) 
+  printf("Error\n");
+  for (int i = 0; i < files.size(); ++i) {
+    std::string stype = files[i].substr(25,2);
+    int type = atoi(stype.c_str());
+    cv::Mat im = imread(files[i], CV_LOAD_IMAGE_COLOR);
+    cv::resize(im, im, Size(64,64));
+    cv::cvtColor(im, im, CV_BGR2GRAY);
+    //imshow("im", im);
+    char buf[100];
+    sprintf(buf, "/home/guada/dev/classaval/train/%d/%08d_%02d.png %d", type, i, type, type);
+    ofs << buf << "\n";
+    char pat[100];
+    sprintf(pat, "/home/guada/dev/classaval/train/%d/%08d_%02d.png",type,i, type);
+    imwrite(pat, im);
+    printf("%s   %s  %s\n", files[i].c_str(), buf, pat);
+  }
+  waitKey(0);
+}
+
+
+void sortTestClasses() {
+  using namespace cv;
+  std::vector<std::string> files;
+  std::string path = "output/test";
+  GetDirectoryFiles(path, files);
+  std::ofstream ofs;
+  ofs.open("/home/guada/dev/classaval/test/test.txt");
+  if (!ofs.is_open()) 
+  printf("Error\n");
+  for (int i = 0; i < files.size(); ++i) {
+    std::string stype = files[i].substr(24,2);
+    int type = atoi(stype.c_str());
+    cv::Mat im = imread(files[i], CV_LOAD_IMAGE_COLOR);
+    cv::resize(im, im, Size(64,64));
+    cv::cvtColor(im, im, CV_BGR2GRAY);
+    //imshow("im", im);
+    char buf[100];
+    sprintf(buf, "/home/guada/dev/classaval/test/%d/%08d_%02d.png %d", type, i, type, type);
+    ofs << buf << "\n";
+    char pat[100];
+    sprintf(pat, "/home/guada/dev/classaval/test/%d/%08d_%02d.png",type,i, type);
+    imwrite(pat, im);
+    printf("%s   %s  %s\n", files[i].c_str(), buf, pat);
+  }
+  waitKey(0);
+}
+
+struct Roi {
+  int type;
+  int r, c;
+  bool visited;
+  Roi() : type(0), r(0), c(0), visited(false) {}
+  void set(int vr, int vc, int vtype, bool vvisited) {
+    r = vr;
+    c = vc;
+    type = vtype;
+    visited = vvisited;
+  }
+};
+
+void drawGrid(cv::Mat &im, int rows, int cols, int r, int c, std::vector<Roi>& v) {
+  using namespace cv;
+  float cell_width = (im.cols-1) / float(cols);
+  float cell_height = (im.rows-1) / float(rows);
+  for (int i = 0; i <= rows; ++i) {
+    line(im, Point(0, i * cell_height), Point(im.cols, i * cell_height), Scalar(0, 0, 255));
+  }
+  for (int i = 0; i <= cols; ++i) {
+    line(im, Point(i * cell_width, 0), Point(i * cell_width, im.rows), Scalar(0, 0, 255));
+  }
+  rectangle(im, Point(c * cell_width , r * cell_height), Point((c + 1) * cell_width, (r + 1) * cell_height), Scalar(0, 255, 0), 2);
+  int dd = 10;
+  for (int i = 0; i < v.size(); ++i) {
+    if (v[i].visited) {
+      int cc = v[i].c;
+      int rr = v[i].r;
+      if (v[i].type == 0)
+        rectangle(im, Point(cc * cell_width +dd , rr * cell_height +dd), Point((cc + 1) * cell_width - dd, (rr + 1) * cell_height - dd), Scalar(0, 255, 255), 3);
+      if (v[i].type == 1)
+        rectangle(im, Point(cc * cell_width +dd , rr * cell_height +dd), Point((cc + 1) * cell_width - dd, (rr + 1) * cell_height - dd), Scalar(255, 255, 0), 3);
+      if (v[i].type == 2)
+        rectangle(im, Point(cc * cell_width +dd , rr * cell_height +dd), Point((cc + 1) * cell_width - dd, (rr + 1) * cell_height - dd), Scalar(255, 0, 255), 3);        
+    }
+  }
+}
+
+int main(int argc, char **argv) {
+  sortTestClasses();
+  return 0;
+  //sortTrainClasses();
+  //return 0;
+  using namespace cv;
+  int COLS = 5;
+  int ROWS = 5;
+  std::string path = "output/test/";  
+  VideoCapture cap("/home/guada/dev/avalanche/build/output5/out6.avi");
+  Mat frame;
+  int iframe = 0;
+  bool doNext = true;
+  while(doNext) {
+    if (!cap.read(frame))
+      break;
+    imshow("frame", frame);  
+    printf("Frame: %d\n", iframe);
+    std::vector<Roi> v(ROWS * COLS);
+    int col = 0;
+    int row = 0;
+    bool processFrame = true;
+    while(processFrame) {
+      Mat temp = frame.clone();  
+      drawGrid(temp, ROWS, COLS, row, col, v);
+      imshow("temp", temp);
+      int c = waitKey(0);
+      //printf("Key = %d\n", c);
+      int idx = row * COLS + col;
+      switch(c) {
+        case 1048625: { // 1 no
+           v[idx].set(row, col, 0, true);
+           col++;
+           break;
+        }
+        case 1048626: { // 2 yes
+           v[idx].set(row, col, 1, true);
+           col++;
+           break;
+        }
+        case 1048627: { // 3 maybe
+           v[idx].set(row, col, 2, true);
+           col++;
+           break;
+        }        
+        case 1113938: { // up
+          row--; 
+          break;
+        }
+        case 1113940: { // down
+          row++;
+          break;
+        }       
+        case 1113937: { // left
+          col--;
+          break;
+        }         
+        case 1113939: { // right
+          col++;
+          break;
+        }
+        case 1048603: { // ESC
+          doNext = false;
+          processFrame = false;
+          break;
+        }
+        case 1048686: { // 'n'
+          processFrame = false;
+          break;
+        }
+        case 1048691: { // 's'
+          float cell_width = frame.cols / float(COLS);
+          float cell_height = frame.rows / float(ROWS);
+          printf("Saving sample size = %fx%f\n", cell_width, cell_height);
+          for (int i = 0; i < v.size(); ++i) {
+              if(v[i].visited) {
+                int cc = v[i].c;
+                int rr = v[i].r;
+                cv::Mat im = frame(Rect(cc * cell_width , rr * cell_height, cell_width, cell_height));
+                char buf[200];
+                sprintf(buf, "%s%08d_%02d_%02d.png", path.c_str(), iframe, i, v[i].type);
+                printf("Filename = %s\n",buf);
+                imwrite(buf, im);
+              }
+          }
+          break;
+        }
+      }
+      if (col < 0) {
+        row--;
+        if (row >= 0)
+          col = COLS - 1; 
+        else
+          col = 0;
+      }
+      if (col > COLS - 1) {
+        row++;
+        if (row <= COLS - 1)
+          col = 0; 
+        else
+          col = COLS - 1;
+      }
+      row = row < 0 ? 0 : row >= ROWS - 1 ? ROWS - 1 : row;
+
+    }
+    iframe++;
+  }
+}
