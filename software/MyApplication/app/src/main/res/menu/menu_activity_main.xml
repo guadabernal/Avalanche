@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+xmlns:app="http://schemas.android.com/apk/res-auto"
+xmlns:tools="http://schemas.android.com/tools" tools:context="com.example.bernal.myapplication.MainActivity">
+    <item android:id="@+id/action_settings" android:title="Disconnect"
+    android:orderInCategory="100" app:showAsAction="never" />
+    <item android:id="@+id/action_settings" android:title="Gamepad Input"
+        android:orderInCategory="100" app:showAsAction="never" />
+    <item android:id="@+id/action_settings" android:title="Touch Input"
+        android:orderInCategory="100" app:showAsAction="never" />
+</menu>
